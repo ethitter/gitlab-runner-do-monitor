@@ -1,0 +1,66 @@
+image: containers.ethitter.com:443/docker/images/golang:latest
+
+variables:
+  REPO_NAME: git.ethitter.com/debian/gitlab-runner-do-monitor
+
+cache:
+  paths:
+    - /apt-cache
+    - $GOPATH/src/github.com
+    - $GOPATH/src/golang.org
+    - $GOPATH/src/google.golang.org
+    - $GOPATH/src/gopkg.in
+
+stages:
+  - test
+  - build
+
+before_script:
+  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+  - cp -R $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+  - cd $GOPATH/src/$REPO_NAME
+  - cp config-sample.json config.json
+
+  - export CC=clang-5.0
+
+  - make dep
+
+unit_tests:
+  stage: test
+  script:
+    - make test
+
+race_detector:
+  stage: test
+  script:
+    - make race
+
+memory_sanitizer:
+  stage: test
+  script:
+    - make msan
+
+code_coverage:
+  stage: test
+  script:
+    - make coverage
+
+code_coverage_report:
+  stage: test
+  script:
+    - make coverhtml
+  only:
+  - master
+
+lint_code:
+  stage: test
+  script:
+    - make lint
+
+build:
+  stage: build
+  script:
+    - make
+  artifacts:
+    paths:
+      - gitlab-runner-do-monitor/
