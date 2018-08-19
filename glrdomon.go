@@ -166,7 +166,7 @@ func checkDroplet(droplet godo.Droplet) {
 }
 
 func checkDropletAge(droplet godo.Droplet) bool {
-	thr := time.Now().Add(time.Duration(-threshold))
+	thr := time.Now().Add(time.Duration(-threshold) * time.Second)
 	created, err := time.Parse(time.RFC3339, droplet.Created)
 	if err != nil {
 		logger.Printf("Could not parse created-timestamp for droplet ID %d", droplet.ID)
