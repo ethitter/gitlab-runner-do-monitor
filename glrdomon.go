@@ -7,14 +7,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
+	"sync"
 	"time"
 
 	"github.com/digitalocean/godo"
 	"github.com/dustin/go-humanize"
-	"github.com/robfig/cron"
 	"golang.org/x/oauth2"
 )
 
@@ -22,7 +20,6 @@ type config struct {
 	LogDest     string `json:"log-dest"`
 	APIKey      string `json:"api-key"`
 	Threshold   int    `json:"threshold"`
-	Schedule    string `json:"schedule"`
 	DeleteStale bool   `json:"delete-stale"`
 }
 
@@ -39,8 +36,9 @@ var (
 	apiKey string
 
 	threshold   int
-	schedule    string
 	deleteStale bool
+
+	wg sync.WaitGroup
 
 	client *godo.Client
 )
@@ -65,34 +63,27 @@ func init() {
 	}
 
 	logDest = cfg.LogDest
-
 	apiKey = cfg.APIKey
-
 	threshold = cfg.Threshold
-	schedule = cfg.Schedule
 	deleteStale = cfg.DeleteStale
 
 	setUpLogger()
-}
 
-func main() {
 	logger.Printf("Starting GitLab Runner monitoring with config %s", configPath)
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
 	if deleteStale {
 		logger.Println("Stale droplets WILL BE DELETED automatically")
 	} else {
 		logger.Println("Stale droplets will be logged, but not deleted")
 	}
+}
 
+func main() {
 	authenticate()
-	startCron()
+	checkAPI()
 
-	caughtSig := <-sig
-
-	logger.Printf("Stopping, got signal %s", caughtSig)
+	wg.Wait()
+	logger.Println("Execution complete!")
 }
 
 func authenticate() {
@@ -113,12 +104,6 @@ func (t *tokenSource) Token() (*oauth2.Token, error) {
 	return token, nil
 }
 
-func startCron() {
-	c := cron.New()
-	c.AddFunc(schedule, checkAPI)
-	c.Start()
-}
-
 func checkAPI() {
 	ctx := context.TODO()
 	droplets, err := listDroplets(ctx, client)
@@ -129,6 +114,7 @@ func checkAPI() {
 	}
 
 	for _, droplet := range droplets {
+		wg.Add(1)
 		go checkDropletAge(droplet)
 	}
 }
@@ -163,6 +149,8 @@ func listDroplets(ctx context.Context, client *godo.Client) ([]godo.Droplet, err
 }
 
 func checkDropletAge(droplet godo.Droplet) {
+	defer wg.Done()
+
 	thr := time.Now().Add(time.Duration(-threshold))
 	created, err := time.Parse(time.RFC3339, droplet.Created)
 	if err != nil {
