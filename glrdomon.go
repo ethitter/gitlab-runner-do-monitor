@@ -46,8 +46,7 @@ func init() {
 	flag.StringVar(&configPath, "config", "./config.json", "Path to configuration file")
 	flag.Parse()
 
-	cfgPathValid := validatePath(&configPath)
-	if !cfgPathValid {
+	if !validatePath(&configPath) {
 		usage()
 	}
 
