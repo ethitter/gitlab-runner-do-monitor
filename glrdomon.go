@@ -172,7 +172,11 @@ func checkDropletAge(droplet godo.Droplet) {
 
 	if thr.After(created) {
 		logger.Printf("Stale droplet => ID: %d; name: \"%s\"; created: %s, %s (%d)", droplet.ID, droplet.Name, humanize.Time(created), droplet.Created, created.Unix())
-		deleteDroplet(droplet)
+
+		deleted := deleteDroplet(droplet)
+		if deleteStale && !deleted {
+			logger.Printf("Failed to delete droplet ID %d", droplet.ID)
+		}
 	}
 }
 
@@ -182,7 +186,11 @@ func deleteDroplet(droplet godo.Droplet) bool {
 	}
 
 	logger.Printf("Deleting droplet %d", droplet.ID)
-	return false
+
+	ctx := context.TODO()
+	_, err := client.Droplets.Delete(ctx, droplet.ID)
+
+	return err != nil
 }
 
 func setUpLogger() {
