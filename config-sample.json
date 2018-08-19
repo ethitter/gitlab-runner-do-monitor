@@ -2,5 +2,6 @@
   "debug-dest": "os.Stdout",
   "debug": false,
   "api-key": "",
-  "threshold": 3600
+  "threshold": 3600,
+  "schedule": "0 10 * * * *"
 }

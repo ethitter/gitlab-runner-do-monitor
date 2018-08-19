@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+
+	"github.com/robfig/cron"
 )
 
 type config struct {
@@ -16,6 +18,7 @@ type config struct {
 	Debug     bool   `json:"debug"`
 	ApiKey    string `json:"api-key"`
 	Threshold int    `json:"threshold"`
+	Schedule  string `json:"schedule"`
 }
 
 var (
@@ -24,6 +27,9 @@ var (
 	logger    *log.Logger
 	debugDest string
 	debug     bool
+
+	threshold int
+	schedule  string
 )
 
 func init() {
@@ -48,6 +54,9 @@ func init() {
 	debugDest = cfg.DebugDest
 	debug = cfg.Debug
 
+	threshold = cfg.Threshold
+	schedule = cfg.Schedule
+
 	setUpLogger()
 }
 
@@ -57,14 +66,33 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
-	// TODO: something!
 	if debug {
 		logger.Println("Test")
+	}
+
+	if authenticate() {
+		startCron()
+	} else {
+		sig <- syscall.SIGTERM
 	}
 
 	caughtSig := <-sig
 
 	logger.Printf("Stopping, got signal %s", caughtSig)
+}
+
+func authenticate() bool {
+	return true
+}
+
+func startCron() {
+	c := cron.New()
+	c.AddFunc(schedule, check)
+	c.Start()
+}
+
+func check() {
+	logger.Println("Check!")
 }
 
 func setUpLogger() {
