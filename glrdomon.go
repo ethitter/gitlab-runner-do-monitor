@@ -163,7 +163,7 @@ func listDroplets(ctx context.Context, client *godo.Client) ([]godo.Droplet, err
 }
 
 func checkDropletAge(droplet godo.Droplet) {
-	thr := time.Now().Add(time.Duration(threshold))
+	thr := time.Now().Add(time.Duration(-threshold))
 	created, err := time.Parse(time.RFC3339, droplet.Created)
 	if err != nil {
 		logger.Printf("Could not parse created-timestamp for droplet ID %d", droplet.ID)
