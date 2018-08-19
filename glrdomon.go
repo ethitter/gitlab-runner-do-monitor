@@ -115,7 +115,7 @@ func checkAPI() {
 
 	for _, droplet := range droplets {
 		wg.Add(1)
-		go checkDropletAge(droplet)
+		go checkDroplet(droplet)
 	}
 }
 
@@ -148,24 +148,38 @@ func listDroplets(ctx context.Context, client *godo.Client) ([]godo.Droplet, err
 	return list, nil
 }
 
-func checkDropletAge(droplet godo.Droplet) {
+func checkDroplet(droplet godo.Droplet) {
 	defer wg.Done()
 
+	if !checkDropletAge(droplet) {
+		return
+	}
+
+	deleted := deleteDroplet(droplet)
+	if deleteStale {
+		if deleted {
+			logger.Printf("Removed droplet %s (%d)", droplet.Name, droplet.ID)
+		} else {
+			logger.Printf("Failed to delete droplet %s (%d)", droplet.Name, droplet.ID)
+		}
+	}
+}
+
+func checkDropletAge(droplet godo.Droplet) bool {
 	thr := time.Now().Add(time.Duration(-threshold))
 	created, err := time.Parse(time.RFC3339, droplet.Created)
 	if err != nil {
 		logger.Printf("Could not parse created-timestamp for droplet ID %d", droplet.ID)
-		return
+		return false
 	}
 
-	if thr.After(created) {
+	stale := thr.After(created)
+
+	if stale {
 		logger.Printf("Stale droplet => ID: %d; name: \"%s\"; created: %s, %s (%d)", droplet.ID, droplet.Name, humanize.Time(created), droplet.Created, created.Unix())
-
-		deleted := deleteDroplet(droplet)
-		if deleteStale && !deleted {
-			logger.Printf("Failed to delete droplet ID %d", droplet.ID)
-		}
 	}
+
+	return stale
 }
 
 func deleteDroplet(droplet godo.Droplet) bool {
@@ -173,12 +187,12 @@ func deleteDroplet(droplet godo.Droplet) bool {
 		return false
 	}
 
-	logger.Printf("Deleting droplet %d", droplet.ID)
+	logger.Printf("Deleting droplet %s (%d)", droplet.Name, droplet.ID)
 
 	ctx := context.TODO()
 	_, err := client.Droplets.Delete(ctx, droplet.ID)
 
-	return err != nil
+	return err == nil
 }
 
 func setUpLogger() {
