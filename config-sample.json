@@ -1,6 +1,5 @@
 {
-  "debug-dest": "os.Stdout",
-  "debug": false,
+  "log-dest": "os.Stdout",
   "api-key": "",
   "threshold": 3600,
   "schedule": "* */10 * * * *",

@@ -19,8 +19,7 @@ import (
 )
 
 type config struct {
-	DebugDest   string `json:"debug-dest"`
-	Debug       bool   `json:"debug"`
+	LogDest     string `json:"log-dest"`
 	APIKey      string `json:"api-key"`
 	Threshold   int    `json:"threshold"`
 	Schedule    string `json:"schedule"`
@@ -34,9 +33,8 @@ type tokenSource struct {
 var (
 	configPath string
 
-	logger    *log.Logger
-	debugDest string
-	debug     bool
+	logger  *log.Logger
+	logDest string
 
 	apiKey string
 
@@ -66,8 +64,7 @@ func init() {
 		usage()
 	}
 
-	debugDest = cfg.DebugDest
-	debug = cfg.Debug
+	logDest = cfg.LogDest
 
 	apiKey = cfg.APIKey
 
@@ -166,9 +163,6 @@ func listDroplets(ctx context.Context, client *godo.Client) ([]godo.Droplet, err
 }
 
 func checkDropletAge(droplet godo.Droplet) {
-	logger.Print(droplet.ID)
-	logger.Print(droplet.Created)
-
 	thr := time.Now().Add(time.Duration(threshold))
 	created, err := time.Parse(time.RFC3339, droplet.Created)
 	if err != nil {
@@ -194,10 +188,10 @@ func deleteDroplet(droplet godo.Droplet) bool {
 func setUpLogger() {
 	logOpts := log.Ldate | log.Ltime | log.LUTC | log.Lshortfile
 
-	if debugDest == "os.Stdout" {
+	if logDest == "os.Stdout" {
 		logger = log.New(os.Stdout, "DEBUG: ", logOpts)
 	} else {
-		path, err := filepath.Abs(debugDest)
+		path, err := filepath.Abs(logDest)
 		if err != nil {
 			logger.Fatal(err)
 		}
