@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
@@ -10,7 +11,9 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/digitalocean/godo"
 	"github.com/robfig/cron"
+	"golang.org/x/oauth2"
 )
 
 type config struct {
@@ -21,6 +24,10 @@ type config struct {
 	Schedule  string `json:"schedule"`
 }
 
+type TokenSource struct {
+	AccessToken string
+}
+
 var (
 	configPath string
 
@@ -28,8 +35,12 @@ var (
 	debugDest string
 	debug     bool
 
+	apiKey string
+
 	threshold int
 	schedule  string
+
+	client *godo.Client
 )
 
 func init() {
@@ -54,6 +65,8 @@ func init() {
 	debugDest = cfg.DebugDest
 	debug = cfg.Debug
 
+	apiKey = cfg.ApiKey
+
 	threshold = cfg.Threshold
 	schedule = cfg.Schedule
 
@@ -70,29 +83,80 @@ func main() {
 		logger.Println("Test")
 	}
 
-	if authenticate() {
-		startCron()
-	} else {
-		sig <- syscall.SIGTERM
-	}
+	authenticate()
+	startCron()
 
 	caughtSig := <-sig
 
 	logger.Printf("Stopping, got signal %s", caughtSig)
 }
 
-func authenticate() bool {
-	return true
+func authenticate() {
+	tokenSource := &TokenSource{
+		AccessToken: apiKey,
+	}
+
+	oauthClient := oauth2.NewClient(context.Background(), tokenSource)
+	client = godo.NewClient(oauthClient)
+}
+
+func (t *TokenSource) Token() (*oauth2.Token, error) {
+	token := &oauth2.Token{
+		AccessToken: t.AccessToken,
+	}
+	return token, nil
 }
 
 func startCron() {
 	c := cron.New()
-	c.AddFunc(schedule, check)
+	c.AddFunc(schedule, checkApi)
 	c.Start()
 }
 
-func check() {
-	logger.Println("Check!")
+func checkApi() {
+	context := context.TODO()
+	droplets, err := listDroplets(context, client)
+	if err != nil {
+		logger.Fatal("Failed to retrieve droplet list")
+	}
+
+	for _, droplet := range droplets {
+		go checkDropletAge(droplet)
+	}
+}
+
+func listDroplets(ctx context.Context, client *godo.Client) ([]godo.Droplet, error) {
+	list := []godo.Droplet{}
+
+	opt := &godo.ListOptions{}
+	for {
+		droplets, resp, err := client.Droplets.List(ctx, opt)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, d := range droplets {
+			list = append(list, d)
+		}
+
+		if resp.Links == nil || resp.Links.IsLastPage() {
+			break
+		}
+
+		page, err := resp.Links.CurrentPage()
+		if err != nil {
+			return nil, err
+		}
+
+		opt.Page = page + 1
+	}
+
+	return list, nil
+}
+
+func checkDropletAge(droplet godo.Droplet) {
+	logger.Print(droplet.ID)
+	logger.Print(droplet.Created)
 }
 
 func setUpLogger() {
