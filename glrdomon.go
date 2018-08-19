@@ -33,8 +33,7 @@ var (
 	logger  *log.Logger
 	logDest string
 
-	apiKey string
-
+	apiKey      string
 	threshold   int
 	deleteStale bool
 
@@ -62,11 +61,11 @@ func init() {
 		usage()
 	}
 
-	logDest = cfg.LogDest
 	apiKey = cfg.APIKey
 	threshold = cfg.Threshold
 	deleteStale = cfg.DeleteStale
 
+	logDest = cfg.LogDest
 	setUpLogger()
 
 	logger.Printf("Starting GitLab Runner monitoring with config %s", configPath)
