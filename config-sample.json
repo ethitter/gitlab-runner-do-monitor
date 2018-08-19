@@ -1,0 +1,6 @@
+{
+  "debug-dest": "os.Stdout",
+  "debug": false,
+  "api-key": "",
+  "threshold": 3600
+}
