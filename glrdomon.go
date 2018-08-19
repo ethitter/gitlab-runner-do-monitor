@@ -19,12 +19,12 @@ import (
 type config struct {
 	DebugDest string `json:"debug-dest"`
 	Debug     bool   `json:"debug"`
-	ApiKey    string `json:"api-key"`
+	APIKey    string `json:"api-key"`
 	Threshold int    `json:"threshold"`
 	Schedule  string `json:"schedule"`
 }
 
-type TokenSource struct {
+type tokenSource struct {
 	AccessToken string
 }
 
@@ -65,7 +65,7 @@ func init() {
 	debugDest = cfg.DebugDest
 	debug = cfg.Debug
 
-	apiKey = cfg.ApiKey
+	apiKey = cfg.APIKey
 
 	threshold = cfg.Threshold
 	schedule = cfg.Schedule
@@ -92,7 +92,7 @@ func main() {
 }
 
 func authenticate() {
-	tokenSource := &TokenSource{
+	tokenSource := &tokenSource{
 		AccessToken: apiKey,
 	}
 
@@ -100,22 +100,24 @@ func authenticate() {
 	client = godo.NewClient(oauthClient)
 }
 
-func (t *TokenSource) Token() (*oauth2.Token, error) {
+// oAuth token
+func (t *tokenSource) Token() (*oauth2.Token, error) {
 	token := &oauth2.Token{
 		AccessToken: t.AccessToken,
 	}
+
 	return token, nil
 }
 
 func startCron() {
 	c := cron.New()
-	c.AddFunc(schedule, checkApi)
+	c.AddFunc(schedule, checkAPI)
 	c.Start()
 }
 
-func checkApi() {
-	context := context.TODO()
-	droplets, err := listDroplets(context, client)
+func checkAPI() {
+	ctx := context.TODO()
+	droplets, err := listDroplets(ctx, client)
 	if err != nil {
 		logger.Fatal("Failed to retrieve droplet list")
 	}
