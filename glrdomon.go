@@ -10,18 +10,21 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/digitalocean/godo"
+	"github.com/dustin/go-humanize"
 	"github.com/robfig/cron"
 	"golang.org/x/oauth2"
 )
 
 type config struct {
-	DebugDest string `json:"debug-dest"`
-	Debug     bool   `json:"debug"`
-	APIKey    string `json:"api-key"`
-	Threshold int    `json:"threshold"`
-	Schedule  string `json:"schedule"`
+	DebugDest   string `json:"debug-dest"`
+	Debug       bool   `json:"debug"`
+	APIKey      string `json:"api-key"`
+	Threshold   int    `json:"threshold"`
+	Schedule    string `json:"schedule"`
+	DeleteStale bool   `json:"delete-stale"`
 }
 
 type tokenSource struct {
@@ -37,8 +40,9 @@ var (
 
 	apiKey string
 
-	threshold int
-	schedule  string
+	threshold   int
+	schedule    string
+	deleteStale bool
 
 	client *godo.Client
 )
@@ -69,6 +73,7 @@ func init() {
 
 	threshold = cfg.Threshold
 	schedule = cfg.Schedule
+	deleteStale = cfg.DeleteStale
 
 	setUpLogger()
 }
@@ -79,8 +84,10 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
-	if debug {
-		logger.Println("Test")
+	if deleteStale {
+		logger.Println("Stale droplets WILL BE DELETED automatically")
+	} else {
+		logger.Println("Stale droplets will be logged, but not deleted")
 	}
 
 	authenticate()
@@ -119,7 +126,9 @@ func checkAPI() {
 	ctx := context.TODO()
 	droplets, err := listDroplets(ctx, client)
 	if err != nil {
-		logger.Fatal("Failed to retrieve droplet list")
+		logger.Println("Warning! Failed to retrieve droplet list.")
+		logger.Print(err)
+		return
 	}
 
 	for _, droplet := range droplets {
@@ -159,6 +168,26 @@ func listDroplets(ctx context.Context, client *godo.Client) ([]godo.Droplet, err
 func checkDropletAge(droplet godo.Droplet) {
 	logger.Print(droplet.ID)
 	logger.Print(droplet.Created)
+
+	thr := time.Now().Add(time.Duration(threshold))
+	created, err := time.Parse(time.RFC3339, droplet.Created)
+	if err != nil {
+		logger.Printf("Could not parse created-timestamp for droplet ID %d", droplet.ID)
+		return
+	}
+
+	if thr.After(created) {
+		logger.Printf("Stale droplet => ID: %d; name: \"%s\"; created: %s, %s (%d)", droplet.ID, droplet.Name, humanize.Time(created), droplet.Created, created.Unix())
+
+		if deleteStale {
+			deleteDroplet(droplet)
+		}
+	}
+}
+
+func deleteDroplet(droplet godo.Droplet) bool {
+	logger.Printf("Deleting droplet %d", droplet.ID)
+	return false
 }
 
 func setUpLogger() {

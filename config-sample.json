@@ -3,5 +3,6 @@
   "debug": false,
   "api-key": "",
   "threshold": 3600,
-  "schedule": "* */10 * * * *"
+  "schedule": "* */10 * * * *",
+  "delete-stale": true
 }
