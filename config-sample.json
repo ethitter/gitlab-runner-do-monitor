@@ -1,0 +1,6 @@
+{
+  "log-dest": "os.Stdout",
+  "api-key": "",
+  "threshold": 3600,
+  "delete-stale": true
+}
