@@ -15,7 +15,7 @@ stages:
   - test
   - build
 
-before_script:
+before_script: &before_script
   - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
   - cp -R $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
   - cd $GOPATH/src/$REPO_NAME
@@ -63,7 +63,7 @@ lint_code:
 
 build:
   stage: build
-  before_script:
+  before_script: *before_script
     - go get github.com/mitchellh/gox
   script:
     - gox -output="${CI_PROJECT_DIR}/${PROJECT_NAME}/{{.Dir}}_{{.OS}}_{{.Arch}}" -parallel=6
