@@ -23,44 +23,50 @@ before_script:
 
   - export CC=clang-5.0
 
-  - make dep
+  - go get -v -d ./...
+
+  - export PROJECT_NAME="gitlab-runner-do-monitor"
+  - export PKG="git.ethitter.com/debian/${PROJECT_NAME}"
+  - export PKG_LIST=$(go list ${PKG}/... | grep -v /vendor/)
 
 unit_tests:
   stage: test
   script:
-    - make test
+    - go test -v ${PKG_LIST}
 
 race_detector:
   stage: test
   script:
-    - make race
+    - go test -v -race ${PKG_LIST}
 
 memory_sanitizer:
   stage: test
   script:
-    - make msan
+    - go test -v -msan ${PKG_LIST}
 
 code_coverage:
   stage: test
   script:
-    - make coverage
+    - ./tools/coverage.sh
 
 code_coverage_report:
   stage: test
   script:
-    - make coverhtml
+    - ./tools/coverage.sh html
   only:
   - master
 
 lint_code:
   stage: test
   script:
-    - make lint
+    - golint -set_exit_status ${PKG_LIST}
 
 build:
   stage: build
+  before_script:
+    - go get github.com/mitchellh/gox
   script:
-    - make
+    - gox -output="${CI_PROJECT_DIR}/${PROJECT_NAME}/{{.Dir}}_{{.OS}}_{{.Arch}}" -parallel=6
   artifacts:
     paths:
       - gitlab-runner-do-monitor/
