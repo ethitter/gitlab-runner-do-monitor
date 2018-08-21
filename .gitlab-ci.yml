@@ -15,19 +15,22 @@ stages:
   - test
   - build
 
-before_script: &before_script
-  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
-  - cp -R $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
-  - cd $GOPATH/src/$REPO_NAME
-  - cp config-sample.json config.json
+.default:
+  before_script: &before_script
+    - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+    - cp -R $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+    - cd $GOPATH/src/$REPO_NAME
+    - cp config-sample.json config.json
 
-  - export CC=clang-5.0
+    - export CC=clang-5.0
 
-  - go get -v -d ./...
+    - go get -v -d ./...
 
-  - export PROJECT_NAME="gitlab-runner-do-monitor"
-  - export PKG="git.ethitter.com/debian/${PROJECT_NAME}"
-  - export PKG_LIST=$(go list ${PKG}/... | grep -v /vendor/)
+    - export PROJECT_NAME="gitlab-runner-do-monitor"
+    - export PKG="git.ethitter.com/debian/${PROJECT_NAME}"
+    - export PKG_LIST=$(go list ${PKG}/... | grep -v /vendor/)
+
+before_script: *before_script
 
 unit_tests:
   stage: test
