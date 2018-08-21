@@ -23,49 +23,44 @@ before_script:
 
   - export CC=clang-5.0
 
-  - go get -v -d ./...
-
-  - export PROJECT_NAME="gitlab-runner-do-monitor"
-  - export PKG="git.ethitter.com/debian/${PROJECT_NAME}"
-  - export PKG_LIST=$(go list ${PKG}/... | grep -v /vendor/)
+  - make dep
 
 unit_tests:
   stage: test
   script:
-    - go test -v ${PKG_LIST}
+    - make test
 
 race_detector:
   stage: test
   script:
-    - go test -v -race ${PKG_LIST}
+    - make race
 
 memory_sanitizer:
   stage: test
   script:
-    - go test -v -msan ${PKG_LIST}
+    - make msan
 
 code_coverage:
   stage: test
   script:
-    - ./tools/coverage.sh
+    - make coverage
 
 code_coverage_report:
   stage: test
   script:
-    - ./tools/coverage.sh html
+    - make coverhtml
   only:
   - master
 
 lint_code:
   stage: test
   script:
-    - golint -set_exit_status ${PKG_LIST}
+    - make lint
 
 build:
   stage: build
   script:
-    - go get github.com/mitchellh/gox
-    - gox -output="${CI_PROJECT_DIR}/${PROJECT_NAME}/{{.Dir}}_{{.OS}}_{{.Arch}}" -parallel=6
+    - make
   artifacts:
     paths:
       - gitlab-runner-do-monitor/
@@ -78,6 +73,7 @@ code_quality:
   allow_failure: true
   services:
     - docker:stable-dind
+  before_script:
   script:
     - export SP_VERSION=$(echo "$CI_SERVER_VERSION" | sed 's/^\([0-9]*\)\.\([0-9]*\).*/\1-\2-stable/')
     - docker run
