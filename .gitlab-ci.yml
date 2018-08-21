@@ -15,22 +15,19 @@ stages:
   - test
   - build
 
-.default:
-  before_script: &before_script
-    - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
-    - cp -R $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
-    - cd $GOPATH/src/$REPO_NAME
-    - cp config-sample.json config.json
+before_script:
+  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+  - cp -R $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+  - cd $GOPATH/src/$REPO_NAME
+  - cp config-sample.json config.json
 
-    - export CC=clang-5.0
+  - export CC=clang-5.0
 
-    - go get -v -d ./...
+  - go get -v -d ./...
 
-    - export PROJECT_NAME="gitlab-runner-do-monitor"
-    - export PKG="git.ethitter.com/debian/${PROJECT_NAME}"
-    - export PKG_LIST=$(go list ${PKG}/... | grep -v /vendor/)
-
-before_script: *before_script
+  - export PROJECT_NAME="gitlab-runner-do-monitor"
+  - export PKG="git.ethitter.com/debian/${PROJECT_NAME}"
+  - export PKG_LIST=$(go list ${PKG}/... | grep -v /vendor/)
 
 unit_tests:
   stage: test
@@ -66,10 +63,8 @@ lint_code:
 
 build:
   stage: build
-  <<: *before_script
-  before_script:
-    - go get github.com/mitchellh/gox
   script:
+    - go get github.com/mitchellh/gox
     - gox -output="${CI_PROJECT_DIR}/${PROJECT_NAME}/{{.Dir}}_{{.OS}}_{{.Arch}}" -parallel=6
   artifacts:
     paths:
