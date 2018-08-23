@@ -11,7 +11,9 @@ lint:
 	@golint -set_exit_status ${PKG_LIST}
 
 test:
+	@go get -u github.com/jstemmer/go-junit-report
 	@go test -v ${PKG_LIST}
+	@go test -v 2>&1 | go-junit-report > report.xml
 
 race: dep
 	@go test -v -race ${PKG_LIST}
@@ -27,9 +29,9 @@ coverhtml:
 
 dep:
 	@go get -v -d ./...
-	@go get github.com/mitchellh/gox
 
 build: dep
+	@go get github.com/mitchellh/gox
 	@gox -output="${CI_PROJECT_DIR}/${PROJECT_NAME}/{{.Dir}}_{{.OS}}_{{.Arch}}" -parallel=6
 
 clean:

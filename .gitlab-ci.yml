@@ -29,6 +29,9 @@ unit_tests:
   stage: test
   script:
     - make test
+  artifacts:
+    reports:
+      junit: report.xml
 
 race_detector:
   stage: test
