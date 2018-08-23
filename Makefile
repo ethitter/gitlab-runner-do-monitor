@@ -11,9 +11,9 @@ lint:
 	@golint -set_exit_status ${PKG_LIST}
 
 test:
-	@go get -u github.com/jstemmer/go-junit-report
+	@go get github.com/jstemmer/go-junit-report
 	@go test -v ${PKG_LIST}
-	@go test -v 2>&1 | go-junit-report > report.xml
+	@go test -v 2>&1 | go-junit-report > ${CI_PROJECT_DIR}/report.xml
 
 race: dep
 	@go test -v -race ${PKG_LIST}
