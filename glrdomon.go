@@ -42,7 +42,7 @@ var (
 	client *godo.Client
 )
 
-func init() {
+func initConfig() {
 	flag.StringVar(&configPath, "config", "./config.json", "Path to configuration file")
 	flag.Parse()
 
@@ -77,6 +77,7 @@ func init() {
 }
 
 func main() {
+	initConfig()
 	authenticate()
 	checkAPI()
 
