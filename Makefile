@@ -30,7 +30,7 @@ dep:
 	@go get github.com/mitchellh/gox
 
 build: dep
-	@gox -output="${CI_PROJECT_DIR}/${PROJECT_NAME}/{{.Dir}}_{{.OS}}_{{.Arch}}" -parallel=6
+	@gox -output="${CI_PROJECT_DIR}/${PROJECT_NAME}/{{.Dir}}_{{.OS}}_{{.Arch}}" -parallel=6 -osarch '!darwin/386'
 
 clean:
 	@rm -f $(PROJECT_NAME)
