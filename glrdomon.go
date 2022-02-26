@@ -30,8 +30,7 @@ type tokenSource struct {
 var (
 	configPath string
 
-	logger  *log.Logger
-	logDest string
+	logger *log.Logger
 
 	apiKey      string
 	threshold   int
@@ -42,7 +41,7 @@ var (
 	client *godo.Client
 )
 
-func init() {
+func initConfig() {
 	flag.StringVar(&configPath, "config", "./config.json", "Path to configuration file")
 	flag.Parse()
 
@@ -64,8 +63,7 @@ func init() {
 	threshold = cfg.Threshold
 	deleteStale = cfg.DeleteStale
 
-	logDest = cfg.LogDest
-	setUpLogger()
+	setUpLogger(cfg.LogDest)
 
 	logger.Printf("Starting GitLab Runner monitoring with config %s", configPath)
 
@@ -77,6 +75,7 @@ func init() {
 }
 
 func main() {
+	initConfig()
 	authenticate()
 	checkAPI()
 
@@ -193,7 +192,7 @@ func deleteDroplet(droplet godo.Droplet) bool {
 	return err == nil
 }
 
-func setUpLogger() {
+func setUpLogger(logDest string) {
 	logOpts := log.Ldate | log.Ltime | log.LUTC | log.Lshortfile
 
 	if logDest == "os.Stdout" {

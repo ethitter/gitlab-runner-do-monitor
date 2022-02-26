@@ -21,7 +21,7 @@ before_script:
   - cd $GOPATH/src/$REPO_NAME
   - cp config-sample.json config.json
 
-  - export CC=clang-5.0
+  - export CC=clang
 
   - make dep
 
