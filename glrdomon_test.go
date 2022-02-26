@@ -8,6 +8,8 @@ import (
 )
 
 func TestCheckDropletAge(t *testing.T) {
+	setUpLogger()
+
 	staleDroplet := godo.Droplet{
 		ID:      1234,
 		Name:    "very-old",
